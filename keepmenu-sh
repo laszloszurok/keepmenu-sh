@@ -1,0 +1,45 @@
+#!/bin/sh
+
+config_file="${XDG_CONFIG_HOME:-$HOME/.config}/keepmenu-sh/config"
+
+sed_escape() {
+    sed -e 's/[]\/$*.^[]/\\&/g'
+}
+
+cfg_write() { # path, key, value
+    cfg_delete "$1" "$2"
+    echo "$2=$3" >> "$1"
+}
+
+cfg_read() { # path, key -> value
+    test -f "$1" && grep "^$(echo "$2" | sed_escape)=" "$1" | sed "s/^$(echo "$2" | sed_escape)=//" | tail -1
+}
+
+cfg_delete() { # path, key
+    test -f "$1" && sed -i "/^$(echo $2 | sed_escape).*$/d" "$1"
+}
+
+cfg_haskey() { # path, key
+    test -f "$1" && grep "^$(echo "$2" | sed_escape)=" "$1" > /dev/null
+}
+
+[ ! -f $config_file ] && echo "No configuration file found. Please create one!" && exit 1
+
+db_path=$(cfg_read $config_file db_path)
+key_path=$(cfg_read $config_file key_path)
+dmenu_flags=$(cfg_read $config_file dmenu_flags)
+
+[ -z "$db_path" ] && echo "Missing configuration option 'db_path'" && exit 1
+[ -z "$key_path" ] && echo "Missing configuration option 'key_path'" && exit 1
+
+# dmenu settings
+prompt=" copy:"
+
+# get all entries from the db
+db_entries=$(keepassxc-cli ls -R -f "$db_path" -k "$key_path" --no-password | grep '/$' -v)
+
+# pipe the list into dmenu to show the password picker
+entry=$(printf '%s\n' "$db_entries" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
+
+# copy the selected entrys password to the clipboard
+keepassxc-cli clip ~/passwords.kdbx -k ~/keepassxc-key --no-password "$entry"
