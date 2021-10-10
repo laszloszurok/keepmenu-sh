@@ -42,7 +42,7 @@ if [ "$not_found" -eq 1 ]; then
 fi
 
 # pipe the list into dmenu to show the password picker
-entry=$(printf '%s\n' "$db_entries" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
+entry=$(printf "%s\n" "$db_entries" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
 
 # copy the selected entrys password to the clipboard
-keepassxc-cli clip ~/passwords.kdbx -k ~/keepassxc-key --no-password "$entry"
+keepassxc-cli clip "$db_path" -k "$key_path" --no-password "$entry"
