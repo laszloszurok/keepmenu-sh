@@ -6,24 +6,22 @@ sed_escape() {
     sed -e 's/[]\/$*.^[]/\\&/g'
 }
 
-cfg_write() { # path, key, value
-    cfg_delete "$1" "$2"
-    echo "$2=$3" >> "$1"
-}
-
 cfg_read() { # path, key -> value
     test -f "$1" && grep "^$(echo "$2" | sed_escape)=" "$1" | sed "s/^$(echo "$2" | sed_escape)=//" | tail -1
 }
 
-cfg_delete() { # path, key
-    test -f "$1" && sed -i "/^$(echo $2 | sed_escape).*$/d" "$1"
+cfg_write() { # path, key, value
+    echo "$2=$3" >> "$1"
 }
 
-cfg_haskey() { # path, key
-    test -f "$1" && grep "^$(echo "$2" | sed_escape)=" "$1" > /dev/null
-}
-
-[ ! -f $config_file ] && echo "No configuration file found. Please create one!" && exit 1
+if [ ! -f $config_file ]; then
+    printf "No configuration file found\n%s\nPlease edit the file and provide the appropriate values\n" "Creating template in $config_file"
+    mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/keepmenu-sh"
+    cfg_write "$config_file" db_path
+    cfg_write "$config_file" key_path
+    cfg_write "$config_file" dmenu_flags
+    exit 1
+fi
 
 db_path=$(cfg_read $config_file db_path)
 key_path=$(cfg_read $config_file key_path)
@@ -32,11 +30,16 @@ dmenu_flags=$(cfg_read $config_file dmenu_flags)
 [ -z "$db_path" ] && echo "Missing configuration option 'db_path'" && exit 1
 [ -z "$key_path" ] && echo "Missing configuration option 'key_path'" && exit 1
 
-# dmenu settings
-prompt=" copy:"
+# dmenu prompt
+prompt="copy password:"
 
 # get all entries from the db
-db_entries=$(keepassxc-cli ls -R -f "$db_path" -k "$key_path" --no-password | grep '/$' -v)
+not_found=0
+db_entries=$(keepassxc-cli ls -R -f "$db_path" -k "$key_path" --no-password | grep '/$' -v) || not_found=1
+if [ "$not_found" -eq 1 ]; then
+    printf "Provide the absolute path for the database and the key in the config file\n"
+    exit 1
+fi
 
 # pipe the list into dmenu to show the password picker
 entry=$(printf '%s\n' "$db_entries" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
