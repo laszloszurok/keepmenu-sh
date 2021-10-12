@@ -4,7 +4,7 @@
 A very simple dmenu wrapper script that lists entries from a keepassxc database and copies the picked password to the clipboard.
 
 ## Limitations
-Right now the usage is very limited. In order to use this script, your database have to be set to use only a key file to unlock and no password. This is because `keepassxc-cli` can't read a password from stdin, so the script can't promt the user to enter their password. However a key file can be passed to `keepassxc-cli` along with the `--no-password` flag. Keep in mind that using no password on the database is not considered secure. If an attacker has access to your db and key, they need nothing else to access your passwords.
+Right now the usage is very limited. In order to use this script, your database has to be set to use only a key file to unlock and no password. This is because `keepassxc-cli` can't read a password from stdin, so the script can't prompt the user to enter their password. However a key file can be passed to `keepassxc-cli` along with the `--no-password` flag. Keep in mind that using no password on the database is not considered secure. If an attacker has access to your db and key, they need nothing else to access your passwords. (Don't keep them on the same device.)
 
 ## Install
 ```
@@ -21,3 +21,4 @@ db_path=/home/user/passwords.kdbx
 key_path=/home/user/key
 dmenu_flags=-c -l 20
 ```
+You should keep your key on a separate device, for example a USB flash drive. Set the path of the key in the config file and always mount the drive on the same location when you want to access your passwords through keepmenu-sh.
