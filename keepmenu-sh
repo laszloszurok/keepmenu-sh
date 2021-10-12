@@ -37,6 +37,7 @@ prompt="copy password:"
 not_found=0
 db_entries=$(keepassxc-cli ls -R -f "$db_path" -k "$key_path" --no-password | grep '/$\|^Recycle Bin' -v) || not_found=1
 if [ "$not_found" -eq 1 ]; then
+    notify-send "Can't open database" "Database or key not found"
     printf "Provide the absolute path for the database and the key in the config file\n"
     exit 1
 fi
