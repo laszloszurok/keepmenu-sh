@@ -1,6 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 config_file="${XDG_CONFIG_HOME:-$HOME/.config}/keepmenu-sh/config"
+
+# cache files
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/keepmenu-sh"
+recent_cache="$cache_dir/recent"
+all_cache="$cache_dir/all"
+mkdir -p "$cache_dir"
+
+update_cache() {
+    sed -i "\|$1|d" "$recent_cache"
+    echo -e "$1\n$(< "$recent_cache")" > "$recent_cache"
+}
 
 sed_escape() {
     sed -e 's/[]\/$*.^[]/\\&/g'
@@ -42,8 +53,26 @@ if [ "$not_found" -eq 1 ]; then
     exit 1
 fi
 
+# write to recent_cache if it does not exist
+[ ! -f "$recent_cache" ] && printf "%s\n" "$db_entries"  > "$recent_cache"
+
+# always write the full list to all_cache, so the list will be always up to date
+printf "%s\n" "$db_entries" > "$all_cache"
+
+# remove anything from recent_cache that is not present in all_cache (eg. the user deleted an entry from the password-store)
+for line in $(grep -vxf "$all_cache" "$recent_cache"); do
+    sed -i "\|$line|d" "$recent_cache"
+done
+
+# merging $recent and $all, find the first occurrence of every entry 
+# and remove any other occurrences
+list=$(awk '!visited[$0]++' "$recent_cache" "$all_cache")
+
 # pipe the list into dmenu to show the password picker
-entry=$(printf "%s\n" "$db_entries" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
+entry=$(printf "%s\n" "$list" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
+
+# update the cache with the picked entry
+update_cache "$entry"
 
 # copy the selected entrys password to the clipboard
 keepassxc-cli clip "$db_path" -k "$key_path" --no-password "$entry"
