@@ -75,4 +75,4 @@ entry=$(printf "%s\n" "$list" | dmenu $dmenu_flags -p "$prompt" "$@") || exit
 update_cache "$entry"
 
 # copy the selected entrys password to the clipboard
-keepassxc-cli clip "$db_path" -k "$key_path" --no-password "$entry"
+keepassxc-cli clip "$db_path" -k "$key_path" --no-password "$entry" 30
